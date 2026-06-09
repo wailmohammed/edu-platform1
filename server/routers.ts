@@ -53,6 +53,7 @@ import { minibossRouter } from "./miniboss.router";
 import { potdRouter } from "./potd.router";
 import { companyProblemsRouter } from "./company-problems.router";
 import { premiumRouter } from "./premium.router";
+import { playgroundRouter } from "./playground.router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -463,6 +464,11 @@ export const appRouter = router({
      * Premium - Premium features (AI, notes, summarization)
      */
     premium: premiumRouter,
+
+    /**
+     * Playground - Code experimentation environment
+     */
+    playground: playgroundRouter,
 });
 
 export type AppRouter = typeof appRouter;
