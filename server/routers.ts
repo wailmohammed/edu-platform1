@@ -26,11 +26,24 @@ import {
   getUserChallenges,
   getUserSubscription,
   getUserById,
+  updateUserPreferences,
+  createChallenge,
+  updateChallengeStatus,
 } from "./db";
 import { z } from "zod";
 import { gamificationRouter } from "./gamification.router";
 import { tierRouter } from "./tier.router";
 import { enrollmentService } from "./enrollment";
+import { problemBuilderRouter } from "./problem-builder.router";
+import { portfolioRouter } from "./portfolio.router";
+import { adminRouter } from "./admin.router";
+import { battleRouter } from "./battle.router";
+import { teamsRouter } from "./teams.router";
+import { learningPathsRouter } from "./learning-paths.router";
+import { interviewPrepRouter } from "./interview-prep.router";
+import { websocketRouter } from "./websocket.router";
+import { badgesRouter } from "./badges.router";
+import { emailServiceRouter } from "./email-service.router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -43,6 +56,23 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+
+    updatePreferences: protectedProcedure
+      .input(
+        z.object({
+          learningGoal: z.string().optional(),
+          recommendedPath: z.string().optional(),
+          onboardingCompleted: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        return await updateUserPreferences(
+          ctx.user.id,
+          input.learningGoal,
+          input.recommendedPath,
+          input.onboardingCompleted
+        );
+      }),
   }),
 
   /**
@@ -271,6 +301,35 @@ export const appRouter = router({
     getChallenges: protectedProcedure.query(async ({ ctx }) => {
       return await getUserChallenges(ctx.user.id);
     }),
+
+    sendChallenge: protectedProcedure
+      .input(
+        z.object({
+          challengedId: z.number(),
+          exerciseId: z.number().optional(),
+          courseId: z.number().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        return await createChallenge(
+          ctx.user.id,
+          input.challengedId,
+          input.exerciseId,
+          input.courseId
+        );
+      }),
+
+    respondToChallenge: protectedProcedure
+      .input(
+        z.object({
+          challengeId: z.number(),
+          accept: z.boolean(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const status = input.accept ? "accepted" : "declined";
+        return await updateChallengeStatus(input.challengeId, ctx.user.id, status);
+      }),
   }),
 
   /**
@@ -289,17 +348,67 @@ export const appRouter = router({
         }
         return { success: true };
       }),
-  }),
+}),
 
-  /**
-   * Gamification (New Service)
-   */
-  gamification: gamificationRouter,
+   /**
+    * Gamification (New Service)
+    */
+   gamification: gamificationRouter,
 
-  /**
-   * Tier Management
-   */
-  tier: tierRouter,
+   /**
+    * Tier Management
+    */
+   tier: tierRouter,
+
+/**
+     * Problem Builder - Interactive Problem Solving
+     */
+    problemBuilder: problemBuilderRouter,
+
+    /**
+     * Portfolio - User project showcase
+     */
+    portfolio: portfolioRouter,
+
+    /**
+     * Admin Dashboard - Platform management
+     */
+    admin: adminRouter,
+
+    /**
+     * Battle - Realtime coding battles
+     */
+    battle: battleRouter,
+
+    /**
+     * Teams - Team challenges and collaboration
+     */
+    teams: teamsRouter,
+
+    /**
+     * Learning Paths - Guided course sequences
+     */
+    learningPaths: learningPathsRouter,
+
+    /**
+     * Interview Prep - Technical interview questions
+     */
+    interviewPrep: interviewPrepRouter,
+
+    /**
+     * WebSocket - Real-time notifications
+     */
+    websocket: websocketRouter,
+
+    /**
+     * Badges - Achievement system
+     */
+    badges: badgesRouter,
+
+    /**
+     * Email - Notification service
+     */
+    emailService: emailServiceRouter,
 });
 
 export type AppRouter = typeof appRouter;

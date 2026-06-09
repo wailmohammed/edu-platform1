@@ -16,6 +16,13 @@ export default function Onboarding() {
   const [goal, setGoal] = useState("");
   const [experience, setExperience] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
+  const utils = trpc.useUtils();
+
+  const updatePreferencesMutation = trpc.auth.updatePreferences.useMutation({
+    onSuccess: () => {
+      utils.auth.me.invalidate();
+    },
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Profile update would be handled by backend in production
@@ -45,8 +52,11 @@ export default function Onboarding() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // In production, this would call the backend to save preferences
-      // For now, we'll just navigate to dashboard
+      await updatePreferencesMutation.mutateAsync({
+        learningGoal: goal,
+        recommendedPath: interests.join(","),
+        onboardingCompleted: true,
+      });
       toast.success("Onboarding complete! Welcome to LearnCode");
       navigate("/dashboard", { replace: true });
     } catch (error) {
