@@ -50,6 +50,9 @@ import { weeklyChallengesRouter } from "./weekly-challenges.router";
 import { certificationsRouter } from "./certifications.router";
 import { projectsRouter } from "./projects.router";
 import { minibossRouter } from "./miniboss.router";
+import { potdRouter } from "./potd.router";
+import { companyProblemsRouter } from "./company-problems.router";
+import { premiumRouter } from "./premium.router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -445,6 +448,21 @@ export const appRouter = router({
      * Miniboss - Challenging projects with user stories
      */
     miniboss: minibossRouter,
+
+    /**
+     * POTD - Problem of the Day
+     */
+    potd: potdRouter,
+
+    /**
+     * Company Problems - Interview prep by company
+     */
+    companyProblems: companyProblemsRouter,
+
+    /**
+     * Premium - Premium features (AI, notes, summarization)
+     */
+    premium: premiumRouter,
 });
 
 export type AppRouter = typeof appRouter;
