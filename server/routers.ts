@@ -54,6 +54,7 @@ import { potdRouter } from "./potd.router";
 import { companyProblemsRouter } from "./company-problems.router";
 import { premiumRouter } from "./premium.router";
 import { playgroundRouter } from "./playground.router";
+import { mashupRouter } from "./mashup.router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -469,6 +470,11 @@ export const appRouter = router({
      * Playground - Code experimentation environment
      */
     playground: playgroundRouter,
+
+    /**
+     * Mashup - Custom contest creation for teams/friends
+     */
+    mashup: mashupRouter,
 });
 
 export type AppRouter = typeof appRouter;

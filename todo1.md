@@ -377,5 +377,6 @@
 - Friend system and challenges
 - Community forums
 - Portfolio showcase
+- Mashup contests (custom contest creation)
 
 **Platform Status: ✅ READY FOR LAUNCH**
