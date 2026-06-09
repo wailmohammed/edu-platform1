@@ -48,6 +48,8 @@ import { ratingRouter } from "./rating.router";
 import { contestsRouter } from "./contests.router";
 import { weeklyChallengesRouter } from "./weekly-challenges.router";
 import { certificationsRouter } from "./certifications.router";
+import { projectsRouter } from "./projects.router";
+import { minibossRouter } from "./miniboss.router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -433,6 +435,16 @@ export const appRouter = router({
      * Certifications - Skill and role-based certifications
      */
     certifications: certificationsRouter,
+
+    /**
+     * Projects - Certification projects
+     */
+    projects: projectsRouter,
+
+    /**
+     * Miniboss - Challenging projects with user stories
+     */
+    miniboss: minibossRouter,
 });
 
 export type AppRouter = typeof appRouter;
