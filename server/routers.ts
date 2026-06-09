@@ -46,6 +46,8 @@ import { badgesRouter } from "./badges.router";
 import { emailServiceRouter } from "./email-service.router";
 import { ratingRouter } from "./rating.router";
 import { contestsRouter } from "./contests.router";
+import { weeklyChallengesRouter } from "./weekly-challenges.router";
+import { certificationsRouter } from "./certifications.router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -421,6 +423,16 @@ export const appRouter = router({
      * Contests - Coding competitions
      */
     contests: contestsRouter,
+
+    /**
+     * Weekly Challenges - Time-limited coding challenges
+     */
+    weeklyChallenges: weeklyChallengesRouter,
+
+    /**
+     * Certifications - Skill and role-based certifications
+     */
+    certifications: certificationsRouter,
 });
 
 export type AppRouter = typeof appRouter;
