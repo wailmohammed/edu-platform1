@@ -44,6 +44,8 @@ import { interviewPrepRouter } from "./interview-prep.router";
 import { websocketRouter } from "./websocket.router";
 import { badgesRouter } from "./badges.router";
 import { emailServiceRouter } from "./email-service.router";
+import { ratingRouter } from "./rating.router";
+import { contestsRouter } from "./contests.router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -409,6 +411,16 @@ export const appRouter = router({
      * Email - Notification service
      */
     emailService: emailServiceRouter,
+
+    /**
+     * Rating - Competitive programming rating system
+     */
+    rating: ratingRouter,
+
+    /**
+     * Contests - Coding competitions
+     */
+    contests: contestsRouter,
 });
 
 export type AppRouter = typeof appRouter;

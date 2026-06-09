@@ -19,6 +19,7 @@ import VisualMathematics from "./pages/VisualMathematics";
 import LearningPaths from "./pages/LearningPaths";
 import InterviewPrep from "./pages/InterviewPrep";
 import MobileApp from "./pages/MobileApp";
+import Contests from "./pages/Contests";
 import { trpc } from "@/lib/trpc";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
@@ -53,6 +54,7 @@ function Router() {
           <Route path="/learning-paths" component={LearningPaths} />
           <Route path="/interview-prep" component={InterviewPrep} />
           <Route path="/mobile" component={MobileApp} />
+          <Route path="/contests" component={Contests} />
        <Route path="/404" component={NotFound} />
        <Route component={NotFound} />
     </Switch>
