@@ -1,4 +1,4 @@
-import { eq, and, desc, asc } from "drizzle-orm";
+import { eq, and, desc, asc, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -143,6 +143,54 @@ export async function getCourseById(id: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function createCourse(data: Partial<InsertCourse>) {
+  const db = await getDb();
+  if (!db) {
+    console.warn('[Database] Cannot create course: database not available');
+    return undefined;
+  }
+
+  try {
+    const result = await db.insert(courses).values(data as any);
+    return result;
+  } catch (error) {
+    console.error('[Database] Failed to create course:', error);
+    throw error;
+  }
+}
+
+export async function updateCourse(id: number, data: Partial<InsertCourse>) {
+  const db = await getDb();
+  if (!db) {
+    console.warn('[Database] Cannot update course: database not available');
+    return undefined;
+  }
+
+  try {
+    await db.update(courses).set(data as any).where(eq(courses.id, id));
+    return await getCourseById(id);
+  } catch (error) {
+    console.error('[Database] Failed to update course:', error);
+    throw error;
+  }
+}
+
+export async function deleteCourse(id: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn('[Database] Cannot delete course: database not available');
+    return undefined;
+  }
+
+  try {
+    await db.delete(courses).where(eq(courses.id, id));
+    return { success: true };
+  } catch (error) {
+    console.error('[Database] Failed to delete course:', error);
+    throw error;
+  }
+}
+
 export async function getCoursesByCategory(category: string) {
   const db = await getDb();
   if (!db) return [];
@@ -230,6 +278,16 @@ export async function getUserCourseProgress(userId: number) {
   if (!db) return [];
 
   return await db.select().from(userProgress).where(eq(userProgress.userId, userId));
+}
+
+export async function getUserCourseProgressByIds(userId: number, courseIds: number[]) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(userProgress)
+    .where(and(eq(userProgress.userId, userId), inArray(userProgress.courseId, courseIds)));
 }
 
 /**

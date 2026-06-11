@@ -296,10 +296,10 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 32768
+  payload.max_tokens = 32768;
   payload.thinking = {
-    "budget_tokens": 128
-  }
+    budget_tokens: 128,
+  } as any;
 
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,
@@ -312,21 +312,70 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.response_format = normalizedResponseFormat;
   }
 
-  const response = await fetch(resolveApiUrl(), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
+  const url = resolveApiUrl();
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
-    );
+  // Retry/backoff for transient provider errors
+  const maxAttempts = 3;
+  let attempt = 0;
+  let lastErr: any = null;
+
+  while (attempt < maxAttempts) {
+    attempt++;
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${ENV.forgeApiKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        // Try parse JSON to detect provider-specific metadata
+        let parsed: any = null;
+        try {
+          parsed = JSON.parse(text);
+        } catch (e) {
+          // ignore
+        }
+
+        // Detect provider_unavailable in response body
+        const providerUnavailable = parsed?.metadata?.error_type === "provider_unavailable" || response.status === 502 || response.status === 503 || response.status === 504;
+
+        if (providerUnavailable && attempt < maxAttempts) {
+          const backoffMs = 200 * Math.pow(2, attempt - 1);
+          await new Promise(r => setTimeout(r, backoffMs));
+          continue;
+        }
+
+        if (providerUnavailable) {
+          const msg = parsed?.message ?? text;
+          const err = new Error(`ProviderUnavailable: ${response.status} ${response.statusText} – ${msg}`);
+          (err as any).code = "provider_unavailable";
+          throw err;
+        }
+
+        throw new Error(`LLM invoke failed: ${response.status} ${response.statusText} – ${text}`);
+      }
+
+      const json = (await response.json()) as InvokeResult;
+      return json;
+    } catch (error) {
+      lastErr = error;
+      // If error indicates provider_unavailable, attempt retry up to maxAttempts
+      const isProviderUnavailable = (error as any)?.code === "provider_unavailable" || /provider_unavailable/.test(String((error as any)?.message || ""));
+      if (isProviderUnavailable && attempt < maxAttempts) {
+        const backoffMs = 200 * Math.pow(2, attempt - 1);
+        await new Promise((r) => setTimeout(r, backoffMs));
+        continue;
+      }
+
+      // Non-retryable or exhausted attempts
+      throw error;
+    }
   }
 
-  return (await response.json()) as InvokeResult;
+  throw lastErr ?? new Error("LLM invoke failed: unknown error");
 }

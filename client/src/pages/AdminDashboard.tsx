@@ -1,6 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -11,6 +13,71 @@ export default function AdminDashboard() {
 
   const { data: courses } = trpc.admin.getCourses.useQuery(undefined, {
     enabled: !!user && user.role === "admin",
+  });
+
+  const { data: apiKeys } = trpc.admin.getApiKeys.useQuery(undefined, {
+    enabled: !!user && user.role === "admin",
+  });
+
+  const utils = trpc.useUtils();
+  const createCourse = trpc.admin.createCourse.useMutation({
+    onSuccess: () => {
+      utils.admin.getCourses.invalidate();
+      setForm({
+        slug: "",
+        title: "",
+        description: "",
+        category: "programming",
+        difficulty: "beginner",
+        language: "",
+        isPremium: false,
+        estimatedHours: 1,
+      });
+    },
+  });
+
+  const updateCourse = trpc.admin.updateCourse.useMutation({
+    onSuccess: () => {
+      utils.admin.getCourses.invalidate();
+      setEditingCourseId(null);
+    },
+  });
+
+  const deleteCourse = trpc.admin.deleteCourse.useMutation({
+    onSuccess: () => {
+      utils.admin.getCourses.invalidate();
+    },
+  });
+
+  const updateApiKey = trpc.admin.updateApiKey.useMutation();
+
+  const [form, setForm] = useState({
+    slug: "",
+    title: "",
+    description: "",
+    category: "programming",
+    difficulty: "beginner",
+    language: "",
+    isPremium: false,
+    estimatedHours: 1,
+  });
+
+  const [editingCourseId, setEditingCourseId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({
+    id: 0,
+    title: "",
+    description: "",
+    category: "programming",
+    difficulty: "beginner",
+    language: "",
+    isPremium: false,
+    estimatedHours: 1,
+  });
+
+  const [apiKeyForm, setApiKeyForm] = useState({
+    service: "benefitpay" as const,
+    key: "",
+    secret: "",
   });
 
   if (!user || user.role !== "admin") {
@@ -64,6 +131,63 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>API Configuration</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-medium mb-2">Payment Providers</h3>
+              <div className="grid gap-2">
+                <div className="p-3 border rounded">
+                  <div className="flex justify-between items-center">
+                    <span>BenefitPay (Bahrain)</span>
+                    <span className="text-sm text-green-600">Configured</span>
+                  </div>
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="flex justify-between items-center">
+                    <span>Stripe</span>
+                    <span className="text-sm text-gray-500">Not configured</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t">
+              <h3 className="font-medium mb-2">Update API Key</h3>
+              <div className="flex gap-2">
+                <select
+                  value={apiKeyForm.service}
+                  onChange={(e) => setApiKeyForm({ ...apiKeyForm, service: e.target.value as any })}
+                  className="p-2 border rounded"
+                >
+                  <option value="benefitpay">BenefitPay</option>
+                  <option value="stripe">Stripe</option>
+                  <option value="oauth">OAuth</option>
+                </select>
+                <input
+                  type="password"
+                  placeholder="API Key"
+                  value={apiKeyForm.key}
+                  onChange={(e) => setApiKeyForm({ ...apiKeyForm, key: e.target.value })}
+                  className="flex-1 p-2 border rounded"
+                />
+                <Button
+                  onClick={() => {
+                    updateApiKey.mutate(apiKeyForm);
+                    setApiKeyForm({ ...apiKeyForm, key: "", secret: "" });
+                  }}
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Courses</CardTitle>
@@ -72,9 +196,38 @@ export default function AdminDashboard() {
           {courses && courses.length > 0 ? (
             <div className="space-y-2">
               {courses.map((c: any) => (
-                <div key={c.id} className="flex justify-between p-2 border-b">
-                  <span>{c.title}</span>
-                  <span>{c.students} students</span>
+                <div key={c.id} className="flex flex-col gap-2 p-4 border-b md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <div className="font-semibold">{c.title}</div>
+                    <div className="text-sm text-gray-500">{c.description || "No description"}</div>
+                    <div className="text-xs text-gray-400">{c.category} • {c.difficulty} • {c.language || "Any"}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      className="px-3 py-1 bg-yellow-500 text-white rounded"
+                      onClick={() => {
+                        setEditingCourseId(c.id);
+                        setEditForm({
+                          id: c.id,
+                          title: c.title ?? "",
+                          description: c.description ?? "",
+                          category: c.category ?? "programming",
+                          difficulty: c.difficulty ?? "beginner",
+                          language: c.language ?? "",
+                          isPremium: c.isPremium ?? false,
+                          estimatedHours: c.estimatedHours ?? 1,
+                        });
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="px-3 py-1 bg-red-600 text-white rounded"
+                      onClick={() => deleteCourse.mutate({ id: c.id })}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -83,6 +236,188 @@ export default function AdminDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {editingCourseId && (
+        <div className="container mx-auto p-6 mt-6 border rounded bg-white shadow-sm">
+          <h2 className="text-xl font-bold mb-4">Edit Course</h2>
+          <div className="space-y-2 max-w-xl">
+            <input
+              className="w-full p-2 border rounded"
+              placeholder="Title"
+              value={editForm.title}
+              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+            />
+            <input
+              className="w-full p-2 border rounded"
+              placeholder="Description"
+              value={editForm.description}
+              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+            />
+            <div className="flex gap-2">
+              <select
+                className="flex-1 p-2 border rounded"
+                value={editForm.category}
+                onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+              >
+                <option value="programming">Programming</option>
+                <option value="web-development">Web</option>
+                <option value="data-science">Data Science</option>
+              </select>
+              <select
+                className="flex-1 p-2 border rounded"
+                value={editForm.difficulty}
+                onChange={(e) => setEditForm({ ...editForm, difficulty: e.target.value })}
+              >
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <input
+                className="flex-1 p-2 border rounded"
+                placeholder="Language"
+                value={editForm.language}
+                onChange={(e) => setEditForm({ ...editForm, language: e.target.value })}
+              />
+              <input
+                className="w-24 p-2 border rounded"
+                type="number"
+                min={0}
+                value={editForm.estimatedHours}
+                onChange={(e) => setEditForm({ ...editForm, estimatedHours: Number(e.target.value) })}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                id="edit-premium"
+                type="checkbox"
+                checked={editForm.isPremium}
+                onChange={(e) => setEditForm({ ...editForm, isPremium: e.target.checked })}
+              />
+              <label htmlFor="edit-premium">Premium</label>
+            </div>
+            <div className="flex gap-2">
+              <button
+                className="px-4 py-2 bg-green-600 text-white rounded"
+                onClick={() => {
+                  updateCourse.mutate({
+                    id: editForm.id,
+                    title: editForm.title,
+                    description: editForm.description,
+                    category: editForm.category,
+                    difficulty: editForm.difficulty,
+                    language: editForm.language,
+                    isPremium: editForm.isPremium,
+                    estimatedHours: editForm.estimatedHours,
+                  });
+                }}
+              >
+                {updateCourse.isLoading ? "Saving…" : "Save Changes"}
+              </button>
+              <button
+                className="px-4 py-2 bg-gray-300 text-black rounded"
+                onClick={() => setEditingCourseId(null)}
+              >
+                Cancel
+              </button>
+            </div>
+            {updateCourse.error && (
+              <p className="text-red-600 mt-2">{String(updateCourse.error)}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="container mx-auto p-6 mt-6">
+        <h2 className="text-xl font-bold mb-2">Add Course</h2>
+        <div className="space-y-2 max-w-xl">
+          <input
+            className="w-full p-2 border rounded"
+            placeholder="Slug"
+            value={form.slug}
+            onChange={(e) => setForm({ ...form, slug: e.target.value })}
+          />
+          <input
+            className="w-full p-2 border rounded"
+            placeholder="Title"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+          />
+          <input
+            className="w-full p-2 border rounded"
+            placeholder="Description"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+          <div className="flex gap-2">
+            <select
+              className="flex-1 p-2 border rounded"
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+            >
+              <option value="programming">Programming</option>
+              <option value="web-development">Web</option>
+              <option value="data-science">Data Science</option>
+            </select>
+            <select
+              className="flex-1 p-2 border rounded"
+              value={form.difficulty}
+              onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
+            >
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <input
+              className="flex-1 p-2 border rounded"
+              placeholder="Language"
+              value={form.language}
+              onChange={(e) => setForm({ ...form, language: e.target.value })}
+            />
+            <input
+              className="w-24 p-2 border rounded"
+              type="number"
+              min={0}
+              value={form.estimatedHours}
+              onChange={(e) => setForm({ ...form, estimatedHours: Number(e.target.value) })}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              id="premium"
+              type="checkbox"
+              checked={form.isPremium}
+              onChange={(e) => setForm({ ...form, isPremium: e.target.checked })}
+            />
+            <label htmlFor="premium">Premium</label>
+          </div>
+          <div>
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded"
+              onClick={() => {
+                createCourse.mutate({
+                  slug: form.slug,
+                  title: form.title,
+                  description: form.description,
+                  category: form.category,
+                  difficulty: form.difficulty,
+                  language: form.language,
+                  isPremium: form.isPremium,
+                  estimatedHours: form.estimatedHours,
+                });
+              }}
+            >
+              {createCourse.isLoading ? "Creating…" : "Create Course"}
+            </button>
+            {createCourse.error && (
+              <p className="text-red-600 mt-2">{String(createCourse.error)}</p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

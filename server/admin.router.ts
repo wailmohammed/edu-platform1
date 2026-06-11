@@ -1,5 +1,6 @@
 import { protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
+import { createCourse, updateCourse, deleteCourse, getAllCourses } from "./db";
 
 export const adminRouter = router({
   getStats: protectedProcedure.query(async ({ ctx }) => {
@@ -35,10 +36,7 @@ export const adminRouter = router({
     if (ctx.user.role !== "admin") {
       throw new Error("Unauthorized");
     }
-    return [
-      { id: 1, title: "JavaScript Fundamentals", students: 234, rating: 4.8 },
-      { id: 2, title: "Python Mastery", students: 189, rating: 4.9 },
-    ];
+    return await getAllCourses();
   }),
 
   getRecentActivity: protectedProcedure
@@ -51,5 +49,89 @@ export const adminRouter = router({
         { id: 1, action: "lesson_completed", user: "Alice", target: "Intro to JS", timestamp: new Date() },
         { id: 2, action: "course_enrolled", user: "Bob", target: "Python Mastery", timestamp: new Date() },
       ];
+    }),
+
+  createCourse: protectedProcedure
+    .input(
+      z.object({
+        slug: z.string(),
+        title: z.string(),
+        description: z.string().optional(),
+        category: z.string(),
+        difficulty: z.string(),
+        language: z.string().optional(),
+        isPremium: z.boolean().optional(),
+        estimatedHours: z.number().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new Error("Unauthorized");
+      const created = await createCourse({
+        slug: input.slug,
+        title: input.title,
+        description: input.description,
+        category: input.category as any,
+        difficulty: input.difficulty as any,
+        language: input.language,
+        isPremium: input.isPremium ?? false,
+        estimatedHours: input.estimatedHours as any,
+      });
+      return created;
+    }),
+
+  updateCourse: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        category: z.string().optional(),
+        difficulty: z.string().optional(),
+        language: z.string().optional(),
+        isPremium: z.boolean().optional(),
+        estimatedHours: z.number().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new Error("Unauthorized");
+      const updated = await updateCourse(input.id, {
+        title: input.title,
+        description: input.description,
+        category: input.category as any,
+        difficulty: input.difficulty as any,
+        language: input.language,
+        isPremium: input.isPremium,
+        estimatedHours: input.estimatedHours as any,
+      });
+      return updated;
+    }),
+
+  deleteCourse: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new Error("Unauthorized");
+      return await deleteCourse(input.id);
+    }),
+
+  getApiKeys: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "admin") throw new Error("Unauthorized");
+    return {
+      benefitpay: { configured: true, key: "***" },
+      stripe: { configured: false, key: null },
+      email: { configured: true, provider: "smtp" },
+    };
+  }),
+
+  updateApiKey: protectedProcedure
+    .input(
+      z.object({
+        service: z.enum(["benefitpay", "stripe", "email", "oauth"]),
+        key: z.string(),
+        secret: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new Error("Unauthorized");
+      return { success: true, service: input.service };
     }),
 });
