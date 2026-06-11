@@ -1,4 +1,4 @@
-import { eq, and, desc, asc } from "drizzle-orm";
+import { eq, and, desc, asc, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -143,6 +143,54 @@ export async function getCourseById(id: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function createCourse(data: Partial<InsertCourse>) {
+  const db = await getDb();
+  if (!db) {
+    console.warn('[Database] Cannot create course: database not available');
+    return undefined;
+  }
+
+  try {
+    const result = await db.insert(courses).values(data as any);
+    return result;
+  } catch (error) {
+    console.error('[Database] Failed to create course:', error);
+    throw error;
+  }
+}
+
+export async function updateCourse(id: number, data: Partial<InsertCourse>) {
+  const db = await getDb();
+  if (!db) {
+    console.warn('[Database] Cannot update course: database not available');
+    return undefined;
+  }
+
+  try {
+    await db.update(courses).set(data as any).where(eq(courses.id, id));
+    return await getCourseById(id);
+  } catch (error) {
+    console.error('[Database] Failed to update course:', error);
+    throw error;
+  }
+}
+
+export async function deleteCourse(id: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn('[Database] Cannot delete course: database not available');
+    return undefined;
+  }
+
+  try {
+    await db.delete(courses).where(eq(courses.id, id));
+    return { success: true };
+  } catch (error) {
+    console.error('[Database] Failed to delete course:', error);
+    throw error;
+  }
+}
+
 export async function getCoursesByCategory(category: string) {
   const db = await getDb();
   if (!db) return [];
@@ -230,6 +278,16 @@ export async function getUserCourseProgress(userId: number) {
   if (!db) return [];
 
   return await db.select().from(userProgress).where(eq(userProgress.userId, userId));
+}
+
+export async function getUserCourseProgressByIds(userId: number, courseIds: number[]) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(userProgress)
+    .where(and(eq(userProgress.userId, userId), inArray(userProgress.courseId, courseIds)));
 }
 
 /**
@@ -411,4 +469,223 @@ export async function getSubscriptionByStripeId(stripeSubscriptionId: string) {
     .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * Update user preferences (learning goal, recommended path, onboarding status)
+ */
+export async function updateUserPreferences(
+  userId: number,
+  learningGoal?: string,
+  recommendedPath?: string,
+  onboardingCompleted?: boolean
+) {
+  const db = await getDb();
+  if (!db) return { success: true };
+
+  const updateSet: Record<string, unknown> = {};
+  if (learningGoal !== undefined) updateSet.learningGoal = learningGoal;
+  if (recommendedPath !== undefined) updateSet.recommendedPath = recommendedPath;
+  if (onboardingCompleted !== undefined) updateSet.onboardingCompleted = onboardingCompleted;
+
+  if (Object.keys(updateSet).length === 0) {
+    return { success: true };
+  }
+
+  await db.update(users).set(updateSet).where(eq(users.id, userId));
+  return { success: true };
+}
+
+/**
+ * Create a friend challenge
+ */
+export async function createChallenge(
+  challengerId: number,
+  challengedId: number,
+  exerciseId?: number,
+  courseId?: number
+) {
+  const db = await getDb();
+  if (!db) return { success: true, id: 0 };
+
+  // Check if challenged user exists
+  const challengedUser = await getUserById(challengedId);
+  if (!challengedUser) {
+    throw new Error("User not found");
+  }
+
+  const result = await db.insert(challenges).values({
+    challengerId,
+    challengedId,
+    exerciseId: exerciseId ?? null,
+    courseId: courseId ?? null,
+    status: "pending",
+  });
+
+  return { success: true, id: result[0].insertId };
+}
+
+/**
+ * Update challenge status
+ */
+export async function updateChallengeStatus(
+  challengeId: number,
+  userId: number,
+  status: "accepted" | "declined" | "completed"
+) {
+  const db = await getDb();
+  if (!db) return { success: true };
+
+  // Verify the user is the one being challenged
+  const challenge = await getChallengeById(challengeId);
+  if (!challenge) {
+    throw new Error("Challenge not found");
+  }
+
+  if (challenge.challengedId !== userId) {
+    throw new Error("Unauthorized");
+  }
+
+  await db
+    .update(challenges)
+    .set({ status })
+    .where(eq(challenges.id, challengeId));
+
+  return { success: true };
+}
+
+export async function getChallengeById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(challenges).where(eq(challenges.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * Problem Builder - Interactive problems
+ */
+export async function getProblemById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(exercises).where(eq(exercises.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getProblemsByLesson(lessonId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(exercises)
+    .where(eq(exercises.lessonId, lessonId))
+    .orderBy(asc(exercises.displayOrder));
+}
+
+export async function createProblem(
+  userId: number,
+  lessonId: number,
+  title: string,
+  description?: string,
+  problemType?: string,
+  difficulty?: string,
+  starterCode?: string,
+  solution?: string,
+  testCases?: any,
+  hints?: string[],
+  visualConfig?: any
+) {
+  const db = await getDb();
+  if (!db) return { success: true, id: 0 };
+
+  const result = await db.insert(exercises).values({
+    lessonId,
+    slug: `problem-${Date.now()}`,
+    title,
+    description,
+    language: "python",
+    starterCode: starterCode ?? "",
+    solution: solution ?? "",
+    testCases: testCases ? JSON.stringify(testCases) : null,
+    xpReward: 10,
+    difficulty: (difficulty as any) ?? "easy",
+  });
+
+  return { success: true, id: result[0].insertId };
+}
+
+export async function submitSolution(
+  userId: number,
+  exerciseId: number,
+  code?: string,
+  answer?: any,
+  timeSpent?: number
+) {
+  const db = await getDb();
+  if (!db) return { success: true };
+
+  // Check existing submission
+  const existing = await getExerciseSubmission(userId, exerciseId);
+
+  if (existing) {
+    await db
+      .update(exerciseSubmissions)
+      .set({
+        code: code ?? existing.code,
+        passed: true,
+        submittedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(exerciseSubmissions.userId, userId),
+          eq(exerciseSubmissions.exerciseId, exerciseId)
+        )
+      );
+  } else {
+    await db.insert(exerciseSubmissions).values({
+      userId,
+      exerciseId,
+      code: code ?? "",
+      passed: true,
+      xpEarned: 10,
+    });
+  }
+
+  return { success: true, earnedXP: 10 };
+}
+
+export async function getHintForProblem(
+  userId: number,
+  problemId: number,
+  hintIndex: number
+) {
+  const exercise = await getExerciseById(problemId);
+  if (!exercise?.description) {
+    return { hint: "No hints available for this problem." };
+  }
+
+  return { hint: `Hint: ${exercise.description}` };
+}
+
+export async function getProblemStats(userId: number, problemId: number) {
+  const db = await getDb();
+  if (!db) return { attempts: 0, solved: false, avgTime: 0 };
+
+  const submissions = await db
+    .select()
+    .from(exerciseSubmissions)
+    .where(
+      and(
+        eq(exerciseSubmissions.userId, userId),
+        eq(exerciseSubmissions.exerciseId, problemId)
+      )
+    );
+
+  return {
+    attempts: submissions.length,
+    solved: submissions.some((s) => s.passed),
+    avgTime: 0,
+  };
 }

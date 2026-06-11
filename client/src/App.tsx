@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import Dashboard from "@/pages/Dashboard";
 import Courses from "@/pages/Courses";
+import CourseDetail from "@/pages/CourseDetail";
 import Pricing from "@/pages/Pricing";
 import Leaderboard from "@/pages/Leaderboard";
 import LessonViewer from "@/pages/LessonViewer";
@@ -12,6 +13,14 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import AdminDashboard from "./pages/AdminDashboard";
+import Portfolio from "./pages/Portfolio";
+import VisualMathematics from "./pages/VisualMathematics";
+import LearningPaths from "./pages/LearningPaths";
+import InterviewPrep from "./pages/InterviewPrep";
+import MobileApp from "./pages/MobileApp";
+import Contests from "./pages/Contests";
+import Certifications from "./pages/Certifications";
 import { trpc } from "@/lib/trpc";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
@@ -31,16 +40,25 @@ const trpcClient = trpc.createClient({
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/courses" component={Courses} />
-      <Route path="/pricing" component={Pricing} />
-      <Route path="/leaderboard" component={Leaderboard} />
-      <Route path="/lesson/:id" component={LessonViewer} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/onboarding" component={Onboarding} />
-      <Route path="/404" component={NotFound} />
-      <Route component={NotFound} />
+<Route path="/" component={Home} />
+       <Route path="/dashboard" component={Dashboard} />
+       <Route path="/courses" component={Courses} />
+       <Route path="/courses/:slug" component={CourseDetail} />
+       <Route path="/pricing" component={Pricing} />
+       <Route path="/leaderboard" component={Leaderboard} />
+       <Route path="/lesson/:lessonId" component={LessonViewer} />
+<Route path="/profile" component={Profile} />
+        <Route path="/onboarding" component={Onboarding} />
+<Route path="/portfolio" component={Portfolio} />
+<Route path="/admin" component={AdminDashboard} />
+          <Route path="/visual-math" component={VisualMathematics} />
+          <Route path="/learning-paths" component={LearningPaths} />
+          <Route path="/interview-prep" component={InterviewPrep} />
+          <Route path="/mobile" component={MobileApp} />
+          <Route path="/contests" component={Contests} />
+          <Route path="/certifications" component={Certifications} />
+       <Route path="/404" component={NotFound} />
+       <Route component={NotFound} />
     </Switch>
   );
 }

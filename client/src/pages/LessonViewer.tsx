@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Zap } from "lucide-react";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,14 +11,15 @@ import { Streamdown } from "streamdown";
 import { useAuth } from "@/_core/hooks/useAuth";
 import CodeEditor from "@/components/CodeEditor";
 import Quiz from "@/components/Quiz";
+import AIPremiumTutor from "@/components/AIPremiumTutor";
 
 export default function LessonViewer() {
   const [, navigate] = useLocation() as any;
+  const params = useParams<{ lessonId: string }>();
   const { user } = useAuth();
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
 
-  // Get lesson ID from URL params (would need router integration)
-  const lessonId = 1; // TODO: Get from URL params
+  const lessonId = parseInt(params.lessonId, 10) || 1;
 
   const { data: lesson, isLoading: loadingLesson } = trpc.lessons.getById.useQuery({ id: lessonId });
   const { data: exercises, isLoading: loadingExercises } = trpc.exercises.listByLesson.useQuery(
@@ -291,18 +292,23 @@ def solve():
               <CardHeader>
                 <CardTitle className="text-base">💡 Tips</CardTitle>
               </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-slate-600 space-y-2">
-                  <li>• Read the theory carefully</li>
-                  <li>• Try the exercises yourself first</li>
-                  <li>• Don't skip the quiz</li>
-                  <li>• Ask for help if stuck</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+<CardContent>
+                 <ul className="text-sm text-slate-600 space-y-2">
+                   <li>• Read the theory carefully</li>
+                   <li>• Try the exercises yourself first</li>
+                   <li>• Don't skip the quiz</li>
+                   <li>• Ask for help if stuck</li>
+                 </ul>
+               </CardContent>
+             </Card>
+
+             {/* AI Tutor - Premium Feature */}
+             {(user?.subscriptionTier === "premium" || !user) && (
+               <AIPremiumTutor lessonId={lessonId} topicName={lesson.title} isPremium={user?.subscriptionTier === "premium"} />
+             )}
+           </div>
+         </div>
+       </main>
+     </div>
+   );
 }

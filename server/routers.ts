@@ -26,11 +26,35 @@ import {
   getUserChallenges,
   getUserSubscription,
   getUserById,
+  updateUserPreferences,
+  createChallenge,
+  updateChallengeStatus,
 } from "./db";
 import { z } from "zod";
 import { gamificationRouter } from "./gamification.router";
 import { tierRouter } from "./tier.router";
 import { enrollmentService } from "./enrollment";
+import { problemBuilderRouter } from "./problem-builder.router";
+import { portfolioRouter } from "./portfolio.router";
+import { adminRouter } from "./admin.router";
+import { battleRouter } from "./battle.router";
+import { teamsRouter } from "./teams.router";
+import { learningPathsRouter } from "./learning-paths.router";
+import { interviewPrepRouter } from "./interview-prep.router";
+import { websocketRouter } from "./websocket.router";
+import { badgesRouter } from "./badges.router";
+import { emailServiceRouter } from "./email-service.router";
+import { ratingRouter } from "./rating.router";
+import { contestsRouter } from "./contests.router";
+import { weeklyChallengesRouter } from "./weekly-challenges.router";
+import { certificationsRouter } from "./certifications.router";
+import { projectsRouter } from "./projects.router";
+import { minibossRouter } from "./miniboss.router";
+import { potdRouter } from "./potd.router";
+import { companyProblemsRouter } from "./company-problems.router";
+import { premiumRouter } from "./premium.router";
+import { playgroundRouter } from "./playground.router";
+import { mashupRouter } from "./mashup.router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -43,6 +67,23 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+
+    updatePreferences: protectedProcedure
+      .input(
+        z.object({
+          learningGoal: z.string().optional(),
+          recommendedPath: z.string().optional(),
+          onboardingCompleted: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        return await updateUserPreferences(
+          ctx.user.id,
+          input.learningGoal,
+          input.recommendedPath,
+          input.onboardingCompleted
+        );
+      }),
   }),
 
   /**
@@ -271,6 +312,35 @@ export const appRouter = router({
     getChallenges: protectedProcedure.query(async ({ ctx }) => {
       return await getUserChallenges(ctx.user.id);
     }),
+
+    sendChallenge: protectedProcedure
+      .input(
+        z.object({
+          challengedId: z.number(),
+          exerciseId: z.number().optional(),
+          courseId: z.number().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        return await createChallenge(
+          ctx.user.id,
+          input.challengedId,
+          input.exerciseId,
+          input.courseId
+        );
+      }),
+
+    respondToChallenge: protectedProcedure
+      .input(
+        z.object({
+          challengeId: z.number(),
+          accept: z.boolean(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const status = input.accept ? "accepted" : "declined";
+        return await updateChallengeStatus(input.challengeId, ctx.user.id, status);
+      }),
   }),
 
   /**
@@ -289,17 +359,122 @@ export const appRouter = router({
         }
         return { success: true };
       }),
-  }),
+}),
 
-  /**
-   * Gamification (New Service)
-   */
-  gamification: gamificationRouter,
+   /**
+    * Gamification (New Service)
+    */
+   gamification: gamificationRouter,
 
-  /**
-   * Tier Management
-   */
-  tier: tierRouter,
+   /**
+    * Tier Management
+    */
+   tier: tierRouter,
+
+/**
+     * Problem Builder - Interactive Problem Solving
+     */
+    problemBuilder: problemBuilderRouter,
+
+    /**
+     * Portfolio - User project showcase
+     */
+    portfolio: portfolioRouter,
+
+    /**
+     * Admin Dashboard - Platform management
+     */
+    admin: adminRouter,
+
+    /**
+     * Battle - Realtime coding battles
+     */
+    battle: battleRouter,
+
+    /**
+     * Teams - Team challenges and collaboration
+     */
+    teams: teamsRouter,
+
+    /**
+     * Learning Paths - Guided course sequences
+     */
+    learningPaths: learningPathsRouter,
+
+    /**
+     * Interview Prep - Technical interview questions
+     */
+    interviewPrep: interviewPrepRouter,
+
+    /**
+     * WebSocket - Real-time notifications
+     */
+    websocket: websocketRouter,
+
+    /**
+     * Badges - Achievement system
+     */
+    badges: badgesRouter,
+
+    /**
+     * Email - Notification service
+     */
+    emailService: emailServiceRouter,
+
+    /**
+     * Rating - Competitive programming rating system
+     */
+    rating: ratingRouter,
+
+    /**
+     * Contests - Coding competitions
+     */
+    contests: contestsRouter,
+
+    /**
+     * Weekly Challenges - Time-limited coding challenges
+     */
+    weeklyChallenges: weeklyChallengesRouter,
+
+    /**
+     * Certifications - Skill and role-based certifications
+     */
+    certifications: certificationsRouter,
+
+    /**
+     * Projects - Certification projects
+     */
+    projects: projectsRouter,
+
+    /**
+     * Miniboss - Challenging projects with user stories
+     */
+    miniboss: minibossRouter,
+
+    /**
+     * POTD - Problem of the Day
+     */
+    potd: potdRouter,
+
+    /**
+     * Company Problems - Interview prep by company
+     */
+    companyProblems: companyProblemsRouter,
+
+    /**
+     * Premium - Premium features (AI, notes, summarization)
+     */
+    premium: premiumRouter,
+
+    /**
+     * Playground - Code experimentation environment
+     */
+    playground: playgroundRouter,
+
+    /**
+     * Mashup - Custom contest creation for teams/friends
+     */
+    mashup: mashupRouter,
 });
 
 export type AppRouter = typeof appRouter;
