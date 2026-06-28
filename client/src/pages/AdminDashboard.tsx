@@ -15,7 +15,7 @@ export default function AdminDashboard() {
     enabled: !!user && user.role === "admin",
   });
 
-  const { data: apiKeys } = trpc.admin.getApiKeys.useQuery(undefined, {
+  const { data: adConfig } = trpc.admin.getAdConfig.useQuery(undefined, {
     enabled: !!user && user.role === "admin",
   });
 
@@ -50,6 +50,7 @@ export default function AdminDashboard() {
   });
 
   const updateApiKey = trpc.admin.updateApiKey.useMutation();
+  const updateAdConfig = trpc.admin.updateAdConfig.useMutation();
 
   const [form, setForm] = useState({
     slug: "",
@@ -78,6 +79,23 @@ export default function AdminDashboard() {
     service: "benefitpay" as const,
     key: "",
     secret: "",
+  });
+
+  const [adForm, setAdForm] = useState({
+    provider: "googleAdSense" as const,
+    enabled: true,
+    config: {} as Record<string, any>,
+  });
+
+  const updateSeoConfig = trpc.admin.updateSeoConfig.useMutation();
+
+  const [seoForm, setSeoForm] = useState({
+    title: "LearnCode - Interactive Learning Platform",
+    description: "Master programming, data science, and web development with interactive courses, coding challenges, and real-time battles.",
+    keywords: "programming, coding, javascript, python, data science, web development, online learning",
+    googleAnalyticsEnabled: false,
+    googleAnalyticsId: "",
+    sitemapEnabled: true,
   });
 
   if (!user || user.role !== "admin") {
@@ -183,6 +201,161 @@ export default function AdminDashboard() {
                   Save
                 </Button>
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Ad Monetization (Free Tier)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-medium mb-2">Ad Providers</h3>
+              <div className="grid gap-2">
+                <div className="p-3 border rounded">
+                  <div className="flex justify-between items-center">
+                    <span>Google AdSense</span>
+                    <span className="text-sm text-green-600">Enabled</span>
+                  </div>
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="flex justify-between items-center">
+                    <span>Adsterra</span>
+                    <span className="text-sm text-gray-500">Disabled</span>
+                  </div>
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="flex justify-between items-center">
+                    <span>Monetag</span>
+                    <span className="text-sm text-gray-500">Disabled</span>
+                  </div>
+                </div>
+                <div className="p-3 border rounded">
+                  <div className="flex justify-between items-center">
+                    <span>Amazon Associates</span>
+                    <span className="text-sm text-green-600">Enabled</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t">
+              <h3 className="font-medium mb-2">Configure Ad Provider</h3>
+              <div className="flex gap-2">
+                <select
+                  value={adForm.provider}
+                  onChange={(e) => setAdForm({ ...adForm, provider: e.target.value as any })}
+                  className="p-2 border rounded"
+                >
+                  <option value="googleAdSense">Google AdSense</option>
+                  <option value="adsterra">Adsterra</option>
+                  <option value="monetag">Monetag</option>
+                  <option value="amazonAssociates">Amazon Associates</option>
+                </select>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={adForm.enabled}
+                    onChange={(e) => setAdForm({ ...adForm, enabled: e.target.checked })}
+                  />
+                  <span>Enabled</span>
+                </label>
+                <Button
+                  onClick={() => {
+                    updateAdConfig.mutate(adForm);
+                  }}
+                >
+                  Save
+                </Button>
+              </div>
+</div>
+           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>SEO Configuration</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-medium mb-2">Meta Tags</h3>
+              <div className="space-y-2">
+                <input
+                  className="w-full p-2 border rounded"
+                  placeholder="Page Title"
+                  value={seoForm.title}
+                  onChange={(e) => setSeoForm({ ...seoForm, title: e.target.value })}
+                />
+                <input
+                  className="w-full p-2 border rounded"
+                  placeholder="Meta Description"
+                  value={seoForm.description}
+                  onChange={(e) => setSeoForm({ ...seoForm, description: e.target.value })}
+                />
+                <input
+                  className="w-full p-2 border rounded"
+                  placeholder="Keywords (comma separated)"
+                  value={seoForm.keywords}
+                  onChange={(e) => setSeoForm({ ...seoForm, keywords: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 border-t">
+              <h3 className="font-medium mb-2">Analytics & Sitemap</h3>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={seoForm.googleAnalyticsEnabled}
+                    onChange={(e) => setSeoForm({ ...seoForm, googleAnalyticsEnabled: e.target.checked })}
+                  />
+                  <span>Google Analytics</span>
+                </label>
+                {seoForm.googleAnalyticsEnabled && (
+                  <input
+                    className="w-full p-2 border rounded"
+                    placeholder="GA Measurement ID (G-XXXXXXXXXX)"
+                    value={seoForm.googleAnalyticsId}
+                    onChange={(e) => setSeoForm({ ...seoForm, googleAnalyticsId: e.target.value })}
+                  />
+                )}
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={seoForm.sitemapEnabled}
+                    onChange={(e) => setSeoForm({ ...seoForm, sitemapEnabled: e.target.checked })}
+                  />
+                  <span>Auto-generate Sitemap</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button
+                onClick={() => {
+                  updateSeoConfig.mutate({
+                    metaTags: {
+                      title: seoForm.title,
+                      description: seoForm.description,
+                      keywords: seoForm.keywords,
+                    },
+                    analytics: {
+                      googleAnalytics: {
+                        enabled: seoForm.googleAnalyticsEnabled,
+                        measurementId: seoForm.googleAnalyticsId,
+                      },
+                    },
+                  });
+                }}
+              >
+                Save SEO Config
+              </Button>
             </div>
           </div>
         </CardContent>
