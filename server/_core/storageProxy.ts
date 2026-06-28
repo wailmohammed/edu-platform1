@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import { ENV } from "./env";
+import { sdk } from "./sdk";
+import { ForbiddenError } from "@shared/_core/errors";
 
 export function registerStorageProxy(app: Express) {
   app.get("/manus-storage/*", async (req, res) => {
@@ -11,6 +13,15 @@ export function registerStorageProxy(app: Express) {
 
     if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
       res.status(500).send("Storage proxy not configured");
+      return;
+    }
+
+    // Require authentication for signed URL retrieval
+    try {
+      await sdk.authenticateRequest(req);
+    } catch (err) {
+      console.warn("[StorageProxy] unauthorized request", String(err));
+      res.status(403).send("Forbidden");
       return;
     }
 

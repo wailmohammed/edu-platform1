@@ -134,4 +134,66 @@ export const adminRouter = router({
       if (ctx.user.role !== "admin") throw new Error("Unauthorized");
       return { success: true, service: input.service };
     }),
+
+  getAdConfig: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "admin") throw new Error("Unauthorized");
+    return {
+      googleAdSense: { enabled: true, publisherId: "***" },
+      adsterra: { enabled: false },
+      monetag: { enabled: false },
+      amazonAssociates: { enabled: true, tag: "***" },
+    };
+  }),
+
+  updateAdConfig: protectedProcedure
+    .input(
+      z.object({
+        provider: z.enum(["googleAdSense", "adsterra", "monetag", "amazonAssociates"]),
+        enabled: z.boolean(),
+        config: z.record(z.any()).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new Error("Unauthorized");
+      return { success: true, provider: input.provider, enabled: input.enabled };
+    }),
+
+  getSeoConfig: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "admin") throw new Error("Unauthorized");
+    return {
+      metaTags: {
+        title: "LearnCode - Interactive Learning Platform",
+        description: "Master programming, data science, and web development with interactive courses, coding challenges, and real-time battles.",
+        keywords: "programming, coding, javascript, python, data science, web development, online learning",
+      },
+      googleAnalytics: { enabled: false, measurementId: null },
+      googleSearchConsole: { enabled: false, verificationId: null },
+      sitemap: { enabled: true, lastGenerated: new Date() },
+    };
+  }),
+
+  updateSeoConfig: protectedProcedure
+    .input(
+      z.object({
+        metaTags: z.object({
+          title: z.string().optional(),
+          description: z.string().optional(),
+          keywords: z.string().optional(),
+        }).optional(),
+        analytics: z.object({
+          googleAnalytics: z.object({
+            enabled: z.boolean(),
+            measurementId: z.string().optional(),
+          }).optional(),
+          googleSearchConsole: z.object({
+            enabled: z.boolean(),
+            verificationId: z.string().optional(),
+          }).optional(),
+        }).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new Error("Unauthorized");
+      return { success: true, config: input };
+    }),
 });
