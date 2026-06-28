@@ -118,6 +118,7 @@ export const adminRouter = router({
     return {
       benefitpay: { configured: true, key: "***" },
       stripe: { configured: false, key: null },
+      paypal: { configured: false, key: null },
       email: { configured: true, provider: "smtp" },
     };
   }),
@@ -125,7 +126,7 @@ export const adminRouter = router({
   updateApiKey: protectedProcedure
     .input(
       z.object({
-        service: z.enum(["benefitpay", "stripe", "email", "oauth"]),
+        service: z.enum(["benefitpay", "stripe", "paypal", "email", "oauth"]),
         key: z.string(),
         secret: z.string().optional(),
       })
