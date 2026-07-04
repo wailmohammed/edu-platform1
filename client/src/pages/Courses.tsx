@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
@@ -9,7 +9,6 @@ import {
   Filter,
   Grid3X3,
   List,
-  Star,
   Clock,
   BookOpen,
   Users,
@@ -27,7 +26,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,7 +51,7 @@ type Category =
 type SortOption = "popular" | "newest" | "title" | "difficulty-asc" | "difficulty-desc" | "hours-asc" | "hours-desc";
 type ViewMode = "grid" | "list";
 
-interface CourseWithEnrollment {
+interface Course {
   id: number;
   slug: string;
   title: string;
@@ -69,8 +67,8 @@ interface CourseWithEnrollment {
   displayOrder: number | null;
   createdAt: Date;
   updatedAt: Date;
-  isEnrolled: boolean;
-  progress: {
+  isEnrolled?: boolean;
+  progress?: {
     completedLessons: number | null;
     totalLessons: number | null;
     progressPercentage: string | null;
@@ -116,7 +114,7 @@ function CourseCardGrid({
   onEnroll,
   enrollingId,
 }: {
-  course: CourseWithEnrollment;
+  course: Course;
   onEnroll: (id: number) => void;
   enrollingId: number | null;
 }) {
@@ -174,17 +172,6 @@ function CourseCardGrid({
         </p>
       </div>
 
-      {/* Progress bar if enrolled */}
-      {course.isEnrolled && (
-        <div className="px-6 pb-2">
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-            <span>{course.progress?.completedLessons || 0}/{course.progress?.totalLessons || course.totalLessons} lessons</span>
-            <span className="font-semibold text-violet-400">{Math.round(progress)}%</span>
-          </div>
-          <Progress value={progress} className="h-1.5 bg-slate-700" />
-        </div>
-      )}
-
       {/* Stats */}
       <div className="px-6 py-3 flex items-center gap-4 text-xs text-slate-400 border-t border-white/5">
         <span className="flex items-center gap-1.5">
@@ -203,19 +190,24 @@ function CourseCardGrid({
 
       {/* CTA */}
       <div className="px-6 pb-6 pt-2">
-        {course.isEnrolled ? (
+        {!course.isPremium ? (
           <Button
-            className="w-full gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+            className="w-full gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/courses/${course.slug}`);
+              onEnroll(course.id);
             }}
+            disabled={enrollingId === course.id}
           >
-            <Play className="w-4 h-4" />
-            {isCompleted ? "Review Course" : "Continue Learning"}
+            {enrollingId === course.id ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ArrowRight className="w-4 h-4" />
+            )}
+            Enroll Free
           </Button>
-        ) : course.isPremium ? (
+        ) : (
           <Button
             className="w-full gap-2 border border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
             variant="outline"
@@ -233,128 +225,6 @@ function CourseCardGrid({
             )}
             Enroll (Premium)
           </Button>
-        ) : (
-          <Button
-            className="w-full gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEnroll(course.id);
-            }}
-            disabled={enrollingId === course.id}
-          >
-            {enrollingId === course.id ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <ArrowRight className="w-4 h-4" />
-            )}
-            Enroll Free
-          </Button>
-        )}
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── CourseCard List View ─────────────────────────────────────────────────────
-function CourseCardList({
-  course,
-  onEnroll,
-  enrollingId,
-}: {
-  course: CourseWithEnrollment;
-  onEnroll: (id: number) => void;
-  enrollingId: number | null;
-}) {
-  const [, navigate] = useLocation();
-  const diff = DIFFICULTY_COLORS[course.difficulty];
-  const progress = course.progress ? Number(course.progress.progressPercentage || 0) : 0;
-  const isCompleted = course.progress?.status === "completed";
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 10 }}
-      transition={{ duration: 0.2 }}
-      className="group flex items-center gap-5 p-5 rounded-2xl border border-white/10 bg-gradient-to-r from-slate-900 to-slate-800 hover:border-violet-500/40 hover:shadow-lg hover:shadow-violet-500/5 transition-all duration-200 cursor-pointer"
-      onClick={() => navigate(`/courses/${course.slug}`)}
-    >
-      {/* Icon */}
-      <div className="text-4xl shrink-0">{course.icon || "📚"}</div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${diff.bg} ${diff.text}`}>
-            {diff.label}
-          </span>
-          {course.isPremium && (
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 flex items-center gap-1">
-              <Zap className="w-3 h-3" /> Premium
-            </span>
-          )}
-          {isCompleted && (
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Completed
-            </span>
-          )}
-        </div>
-        <h3 className="font-bold text-white text-base group-hover:text-violet-300 transition-colors truncate">
-          {course.title}
-        </h3>
-        <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{course.description}</p>
-        {course.isEnrolled && (
-          <div className="mt-2 flex items-center gap-2">
-            <Progress value={progress} className="h-1.5 bg-slate-700 flex-1 max-w-[180px]" />
-            <span className="text-xs text-violet-400">{Math.round(progress)}%</span>
-          </div>
-        )}
-      </div>
-
-      {/* Stats */}
-      <div className="hidden md:flex items-center gap-6 text-xs text-slate-400 shrink-0">
-        <span className="flex items-center gap-1.5">
-          <BookOpen className="w-3.5 h-3.5" />
-          {course.totalLessons} lessons
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5" />
-          {course.estimatedHours}h
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Users className="w-3.5 h-3.5" />
-          {(course.enrollmentCount || 0).toLocaleString()}
-        </span>
-      </div>
-
-      {/* CTA */}
-      <div className="shrink-0">
-        {course.isEnrolled ? (
-          <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5"
-            onClick={(e) => { e.stopPropagation(); navigate(`/courses/${course.slug}`); }}>
-            <Play className="w-3.5 h-3.5" />
-            {isCompleted ? "Review" : "Continue"}
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            className={course.isPremium
-              ? "border border-amber-500/40 text-amber-400 hover:bg-amber-500/10 bg-transparent"
-              : "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0"
-            }
-            onClick={(e) => { e.stopPropagation(); onEnroll(course.id); }}
-            disabled={enrollingId === course.id}
-          >
-            {enrollingId === course.id ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : course.isPremium ? (
-              <><Lock className="w-3.5 h-3.5 mr-1" />Enroll</>
-            ) : (
-              <>Enroll Free</>
-            )}
-          </Button>
         )}
       </div>
     </motion.div>
@@ -363,7 +233,6 @@ function CourseCardList({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Courses() {
-  const { isAuthenticated, getLoginUrl } = useAuth();
   const [, navigate] = useLocation();
 
   // UI state
@@ -371,49 +240,18 @@ export default function Courses() {
   const [selectedCategory, setSelectedCategory] = useState<Category | "all">("all");
   const [selectedDifficulties, setSelectedDifficulties] = useState<Set<Difficulty>>(new Set());
   const [showFreeOnly, setShowFreeOnly] = useState(false);
-  const [showEnrolledOnly, setShowEnrolledOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [enrollingId, setEnrollingId] = useState<number | null>(null);
 
   // Data
-  const { data: courses, isLoading, refetch } = trpc.courses.listWithEnrollment.useQuery();
-  const enrollMutation = trpc.enrollment.enroll.useMutation({
-    onSuccess: (data, variables) => {
-      if (data.alreadyEnrolled) {
-        toast.info("You're already enrolled in this course");
-      } else {
-        toast.success("🎉 Successfully enrolled! Start learning now.");
-      }
-      refetch();
-    },
-    onError: (err) => {
-      if (err.message.includes("UNAUTHORIZED") || err.message.includes("Forbidden")) {
-        toast.error("Please log in to enroll in courses");
-        window.location.href = getLoginUrl();
-      } else {
-        toast.error("Enrollment failed. Please try again.");
-      }
-    },
-    onSettled: () => setEnrollingId(null),
-  });
-
-  const handleEnroll = (courseId: number) => {
-    if (!isAuthenticated) {
-      toast("Please log in to enroll", {
-        action: { label: "Login", onClick: () => (window.location.href = getLoginUrl()) },
-      });
-      return;
-    }
-    setEnrollingId(courseId);
-    enrollMutation.mutate({ courseId });
-  };
+  const { data: courses, isLoading, refetch } = trpc.courses.list.useQuery();
 
   // Filtering + Sorting
   const filteredCourses = useMemo(() => {
     if (!courses) return [];
 
-    let result = courses as CourseWithEnrollment[];
+    let result = [...courses] as Course[];
 
     // Search
     if (searchQuery.trim()) {
@@ -439,11 +277,6 @@ export default function Courses() {
     // Free only
     if (showFreeOnly) {
       result = result.filter((c) => !c.isPremium);
-    }
-
-    // Enrolled only
-    if (showEnrolledOnly) {
-      result = result.filter((c) => c.isEnrolled);
     }
 
     // Sort
@@ -473,15 +306,13 @@ export default function Courses() {
     }
 
     return sorted;
-  }, [courses, searchQuery, selectedCategory, selectedDifficulties, showFreeOnly, showEnrolledOnly, sortBy]);
+  }, [courses, searchQuery, selectedCategory, selectedDifficulties, showFreeOnly, sortBy]);
 
   const stats = useMemo(() => {
-    if (!courses) return { total: 0, enrolled: 0, free: 0, completed: 0 };
+    if (!courses) return { total: 0, free: 0 };
     return {
       total: courses.length,
-      enrolled: (courses as CourseWithEnrollment[]).filter((c) => c.isEnrolled).length,
       free: courses.filter((c) => !c.isPremium).length,
-      completed: (courses as CourseWithEnrollment[]).filter((c) => c.progress?.status === "completed").length,
     };
   }, [courses]);
 
@@ -499,11 +330,10 @@ export default function Courses() {
     setSelectedCategory("all");
     setSelectedDifficulties(new Set());
     setShowFreeOnly(false);
-    setShowEnrolledOnly(false);
   };
 
   const hasActiveFilters =
-    searchQuery || selectedCategory !== "all" || selectedDifficulties.size > 0 || showFreeOnly || showEnrolledOnly;
+    searchQuery || selectedCategory !== "all" || selectedDifficulties.size > 0 || showFreeOnly;
 
   return (
     <div className="min-h-screen bg-[#0d0d1a] text-white">
@@ -524,21 +354,6 @@ export default function Courses() {
               <span className="text-white font-semibold">{stats.total}+ expert-crafted courses</span>.
               Start for free, upgrade when ready.
             </p>
-
-            {/* Stats row */}
-            <div className="flex items-center gap-6 mt-6 text-sm">
-              {[
-                { icon: BookOpen, label: `${stats.total} Courses`, color: "text-violet-400" },
-                { icon: Award, label: `${stats.free} Free`, color: "text-emerald-400" },
-                { icon: Trophy, label: `${stats.enrolled} Enrolled`, color: "text-amber-400" },
-                { icon: CheckCircle2, label: `${stats.completed} Completed`, color: "text-blue-400" },
-              ].map(({ icon: Icon, label, color }) => (
-                <div key={label} className={`flex items-center gap-1.5 ${color} font-medium`}>
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </div>
-              ))}
-            </div>
           </motion.div>
         </div>
       </div>
@@ -583,71 +398,6 @@ export default function Courses() {
             )}
           </div>
 
-          {/* Difficulty filter */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className={`gap-2 border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white ${
-                  selectedDifficulties.size > 0 ? "border-violet-500/50 text-violet-300" : ""
-                }`}
-              >
-                <Filter className="w-4 h-4" />
-                Difficulty
-                {selectedDifficulties.size > 0 && (
-                  <span className="bg-violet-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                    {selectedDifficulties.size}
-                  </span>
-                )}
-                <ChevronDown className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-slate-900 border-white/10 text-white w-48">
-              <DropdownMenuLabel className="text-slate-400 text-xs">Select Difficulty</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-white/10" />
-              {(["beginner", "intermediate", "advanced"] as Difficulty[]).map((d) => (
-                <DropdownMenuCheckboxItem
-                  key={d}
-                  checked={selectedDifficulties.has(d)}
-                  onCheckedChange={() => toggleDifficulty(d)}
-                  className="capitalize"
-                >
-                  <span className={DIFFICULTY_COLORS[d].text + " mr-2"}>●</span>
-                  {DIFFICULTY_COLORS[d].label}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* More filters */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="gap-2 border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
-              >
-                More
-                <ChevronDown className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-slate-900 border-white/10 text-white w-48">
-              <DropdownMenuLabel className="text-slate-400 text-xs">More Filters</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuCheckboxItem
-                checked={showFreeOnly}
-                onCheckedChange={setShowFreeOnly}
-              >
-                <span className="text-emerald-400 mr-2">●</span> Free Only
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={showEnrolledOnly}
-                onCheckedChange={setShowEnrolledOnly}
-              >
-                <span className="text-violet-400 mr-2">●</span> My Courses
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
           {/* Sort */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -674,64 +424,7 @@ export default function Courses() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* View mode */}
-          <div className="flex rounded-lg border border-white/10 overflow-hidden">
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`p-2.5 transition-colors ${viewMode === "grid" ? "bg-violet-600 text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"}`}
-            >
-              <Grid3X3 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-2.5 transition-colors ${viewMode === "list" ? "bg-violet-600 text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"}`}
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
         </div>
-
-        {/* ── Active Filters ── */}
-        {hasActiveFilters && (
-          <div className="flex items-center gap-2 mb-5 flex-wrap">
-            <span className="text-xs text-slate-500">Active filters:</span>
-            {searchQuery && (
-              <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-white/10 text-slate-300">
-                Search: "{searchQuery}"
-                <button onClick={() => setSearchQuery("")} className="hover:text-white"><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {selectedCategory !== "all" && (
-              <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-violet-500/20 text-violet-300">
-                {CATEGORIES.find((c) => c.value === selectedCategory)?.label}
-                <button onClick={() => setSelectedCategory("all")} className="hover:text-white"><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {Array.from(selectedDifficulties).map((d) => (
-              <span key={d} className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${DIFFICULTY_COLORS[d].bg} ${DIFFICULTY_COLORS[d].text}`}>
-                {DIFFICULTY_COLORS[d].label}
-                <button onClick={() => toggleDifficulty(d)} className="hover:text-white"><X className="w-3 h-3" /></button>
-              </span>
-            ))}
-            {showFreeOnly && (
-              <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300">
-                Free Only <button onClick={() => setShowFreeOnly(false)} className="hover:text-white"><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            {showEnrolledOnly && (
-              <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-300">
-                My Courses <button onClick={() => setShowEnrolledOnly(false)} className="hover:text-white"><X className="w-3 h-3" /></button>
-              </span>
-            )}
-            <button
-              onClick={clearFilters}
-              className="text-xs text-slate-500 hover:text-white underline underline-offset-2 ml-2"
-            >
-              Clear all
-            </button>
-          </div>
-        )}
 
         {/* ── Results count ── */}
         <div className="flex items-center justify-between mb-5">
@@ -742,14 +435,14 @@ export default function Courses() {
           </p>
         </div>
 
-        {/* ── Course Grid/List ── */}
+        {/* ── Course Grid ── */}
         {isLoading ? (
-          <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" : "space-y-3"}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
                 className="rounded-2xl border border-white/5 bg-white/3 animate-pulse"
-                style={{ height: viewMode === "grid" ? 320 : 90 }}
+                style={{ height: 320 }}
               />
             ))}
           </div>
@@ -766,61 +459,18 @@ export default function Courses() {
               Clear All Filters
             </Button>
           </motion.div>
-        ) : viewMode === "grid" ? (
-          <motion.div
-            layout
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
-          >
+        ) : (
+          <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             <AnimatePresence mode="popLayout">
               {filteredCourses.map((course) => (
                 <CourseCardGrid
                   key={course.id}
                   course={course}
-                  onEnroll={handleEnroll}
-                  enrollingId={enrollingId}
+                  onEnroll={() => {}}
+                  enrollingId={null}
                 />
               ))}
             </AnimatePresence>
-          </motion.div>
-        ) : (
-          <motion.div layout className="space-y-3">
-            <AnimatePresence mode="popLayout">
-              {filteredCourses.map((course) => (
-                <CourseCardList
-                  key={course.id}
-                  course={course}
-                  onEnroll={handleEnroll}
-                  enrollingId={enrollingId}
-                />
-              ))}
-            </AnimatePresence>
-          </motion.div>
-        )}
-
-        {/* ── Premium Upsell ── */}
-        {!isAuthenticated && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-16 rounded-2xl bg-gradient-to-r from-violet-900/60 to-indigo-900/60 border border-violet-500/30 p-8 text-center relative overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-violet-600/10 to-indigo-600/10" />
-            <div className="relative">
-              <div className="text-5xl mb-4">🚀</div>
-              <h2 className="text-2xl font-bold text-white mb-3">Start Your Learning Journey</h2>
-              <p className="text-slate-300 mb-6 max-w-lg mx-auto">
-                Join thousands of developers leveling up their skills. Sign up free and get instant access to{" "}
-                <strong className="text-white">{stats.free}+ free courses</strong>.
-              </p>
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-8"
-                onClick={() => (window.location.href = getLoginUrl())}
-              >
-                Get Started Free
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </div>
           </motion.div>
         )}
       </div>
