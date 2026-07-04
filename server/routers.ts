@@ -55,6 +55,7 @@ import { companyProblemsRouter } from "./company-problems.router";
 import { premiumRouter } from "./premium.router";
 import { playgroundRouter } from "./playground.router";
 import { mashupRouter } from "./mashup.router";
+import { monitoringRouter } from "./monitoring.router";
 
 export const appRouter = router({
   system: systemRouter,
