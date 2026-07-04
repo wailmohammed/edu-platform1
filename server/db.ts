@@ -117,9 +117,22 @@ export async function getUserById(id: number) {
 /**
  * Course queries
  */
+
+// Mock courses for development when database unavailable
+export const mockCourses = [
+  { id: 1, slug: "python-fundamentals", title: "Python Fundamentals", description: "Learn Python basics", icon: "🐍", category: "programming", difficulty: "beginner", language: "python", totalLessons: 24, estimatedHours: "12", isPremium: false, enrollmentCount: 15420, displayOrder: 1, createdAt: new Date(), updatedAt: new Date() },
+  { id: 2, slug: "javascript-essentials", title: "JavaScript Essentials", description: "Master JavaScript from scratch", icon: "⚡", category: "programming", difficulty: "beginner", language: "javascript", totalLessons: 30, estimatedHours: "15", isPremium: false, enrollmentCount: 12350, displayOrder: 2, createdAt: new Date(), updatedAt: new Date() },
+  { id: 3, slug: "html-css-complete", title: "HTML & CSS Complete", description: "Build websites with HTML and CSS", icon: "🌐", category: "web-development", difficulty: "beginner", language: "html", totalLessons: 20, estimatedHours: "10", isPremium: false, enrollmentCount: 8750, displayOrder: 3, createdAt: new Date(), updatedAt: new Date() },
+  { id: 4, slug: "sql-mastery", title: "SQL Mastery", description: "Master database queries with SQL", icon: "🗄️", category: "databases", difficulty: "beginner", language: "sql", totalLessons: 18, estimatedHours: "9", isPremium: false, enrollmentCount: 6340, displayOrder: 4, createdAt: new Date(), updatedAt: new Date() },
+  { id: 5, slug: "react-advanced", title: "React Advanced Patterns", description: "Advanced React patterns and hooks", icon: "⚛️", category: "web-development", difficulty: "advanced", language: "javascript", totalLessons: 28, estimatedHours: "18", isPremium: true, enrollmentCount: 3200, displayOrder: 5, createdAt: new Date(), updatedAt: new Date() },
+  { id: 6, slug: "data-science-python", title: "Data Science with Python", description: "Analyze data with pandas and numpy", icon: "📊", category: "data-science", difficulty: "intermediate", language: "python", totalLessons: 35, estimatedHours: "22", isPremium: true, enrollmentCount: 4100, displayOrder: 6, createdAt: new Date(), updatedAt: new Date() },
+  { id: 7, slug: "nodejs-backend", title: "Node.js Backend Development", description: "Build scalable backend APIs", icon: "🚀", category: "web-development", difficulty: "intermediate", language: "javascript", totalLessons: 32, estimatedHours: "20", isPremium: false, enrollmentCount: 5600, displayOrder: 7, createdAt: new Date(), updatedAt: new Date() },
+  { id: 8, slug: "algorithms-coding", title: "Algorithms & Interview Prep", description: "Ace coding interviews", icon: "📈", category: "algorithms", difficulty: "advanced", language: "python", totalLessons: 40, estimatedHours: "25", isPremium: true, enrollmentCount: 2800, displayOrder: 8, createdAt: new Date(), updatedAt: new Date() },
+];
+
 export async function getAllCourses() {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) return mockCourses;
 
   return await db
     .select()

@@ -1,5 +1,5 @@
 import { eq, and, or, like, desc, asc, sql } from "drizzle-orm";
-import { getDb } from "./db";
+import { getDb, mockCourses } from "./db";
 import {
   courses,
   userProgress,
@@ -79,7 +79,7 @@ export const enrollmentService = {
    */
   async getCoursesWithEnrollment(userId: number | null) {
     const db = await getDb();
-    if (!db) return [];
+    if (!db) return mockCourses.map((c) => ({ ...c, isEnrolled: false, progress: null }));
 
     const allCourses = await db
       .select()
