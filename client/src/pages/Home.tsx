@@ -375,9 +375,9 @@ export default function Home() {
             <div>
               <h3 className="font-semibold text-white mb-4">Legal</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition">Privacy</a></li>
-                <li><a href="#" className="hover:text-white transition">Terms</a></li>
-                <li><a href="#" className="hover:text-white transition">Contact</a></li>
+                <li><a href="/privacy" className="hover:text-white transition">Privacy Policy</a></li>
+                <li><a href="/terms" className="hover:text-white transition">Terms of Service</a></li>
+                <li><a href="/refund" className="hover:text-white transition">Refund Policy</a></li>
               </ul>
             </div>
             <div>
@@ -392,8 +392,8 @@ export default function Home() {
           <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between text-sm">
             <p>&copy; 2026 CodeLearnify. All rights reserved.</p>
             <div className="flex gap-6 mt-4 sm:mt-0">
-              <a href="#" className="hover:text-white transition">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition">Terms of Service</a>
+              <a href="/privacy" className="hover:text-white transition">Privacy Policy</a>
+              <a href="/terms" className="hover:text-white transition">Terms of Service</a>
             </div>
           </div>
         </div>

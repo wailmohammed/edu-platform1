@@ -25,6 +25,9 @@ import Contests from "./pages/Contests";
 import Certifications from "./pages/Certifications";
 import ProgressAnalyticsPage from "./pages/ProgressAnalyticsPage";
 import AITutorPage from "./pages/AITutorPage";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import RefundPolicy from "./pages/RefundPolicy";
 import { trpc } from "@/lib/trpc";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
@@ -65,6 +68,9 @@ function Router() {
       <Route path="/mobile" component={MobileApp} />
       <Route path="/contests" component={Contests} />
       <Route path="/certifications" component={Certifications} />
+      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/terms" component={TermsOfService} />
+      <Route path="/refund" component={RefundPolicy} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

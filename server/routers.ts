@@ -57,6 +57,7 @@ import { playgroundRouter } from "./playground.router";
 import { mashupRouter } from "./mashup.router";
 import { monitoringRouter } from "./monitoring.router";
 import { streakNotificationsRouter } from "./streak-notifications.router";
+import { paddleRouter } from "./paddle.router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -482,6 +483,11 @@ export const appRouter = router({
       * Streak Notifications - Daily reminders and streak management
       */
     streakNotifications: streakNotificationsRouter,
+
+    /**
+      * Paddle - Payment processing
+      */
+    paddle: paddleRouter,
 });
 
 export type AppRouter = typeof appRouter;
