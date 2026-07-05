@@ -56,6 +56,7 @@ import { premiumRouter } from "./premium.router";
 import { playgroundRouter } from "./playground.router";
 import { mashupRouter } from "./mashup.router";
 import { monitoringRouter } from "./monitoring.router";
+import { streakNotificationsRouter } from "./streak-notifications.router";
 
 export const appRouter = router({
   system: systemRouter,
@@ -472,10 +473,15 @@ export const appRouter = router({
      */
     playground: playgroundRouter,
 
+/**
+      * Monitoring - Health checks and error tracking
+      */
+    monitoring: monitoringRouter,
+
     /**
-     * Mashup - Custom contest creation for teams/friends
-     */
-    mashup: mashupRouter,
+      * Streak Notifications - Daily reminders and streak management
+      */
+    streakNotifications: streakNotificationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

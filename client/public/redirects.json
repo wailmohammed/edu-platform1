@@ -1,0 +1,34 @@
+{
+  "domains": [
+    {
+      "domain": "turnideasintocode.com",
+      "redirect": "/#hero",
+      "description": "Main homepage redirect"
+    },
+    {
+      "domain": "codingthatactuallysticks.com",
+      "redirect": "/success-stories",
+      "description": "Success stories page"
+    },
+    {
+      "domain": "codesmarterlearnfaster.com",
+      "redirect": "/#courses",
+      "description": "Courses section"
+    },
+    {
+      "domain": "fromideastorealcode.com",
+      "redirect": "/about",
+      "description": "About page"
+    },
+    {
+      "domain": "mastercodewithlastingskills.com",
+      "redirect": "/learning-paths",
+      "description": "Learning paths"
+    },
+    {
+      "domain": "createcodeandconquer.com",
+      "redirect": "/contests",
+      "description": "Coding contests"
+    }
+  ]
+}
