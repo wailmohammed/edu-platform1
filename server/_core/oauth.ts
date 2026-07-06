@@ -3,6 +3,7 @@ import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { ENV } from "./env";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -10,6 +11,13 @@ function getQueryParam(req: Request, key: string): string | undefined {
 }
 
 export function registerOAuthRoutes(app: Express) {
+  app.get("/api/oauth/login", (req: Request, res: Response) => {
+    const redirectUri = encodeURIComponent(`${ENV.baseUrl}/api/oauth/callback`);
+    const state = btoa(redirectUri);
+    const authUrl = `${ENV.oAuthServerUrl}/authorize?client_id=${ENV.appId}&redirect_uri=${redirectUri}&state=${state}&response_type=code`;
+    res.redirect(302, authUrl);
+  });
+
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
